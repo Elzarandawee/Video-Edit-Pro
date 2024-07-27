@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoEditPro</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2803828006954703"
+     crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #editor {
+            width: 80%;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .control-panel button, .control-panel input {
+            margin: 5px;
+        }
+        video {
+            max-width: 100%;
+            margin-bottom: 10px;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>VideoEditPro</h1>
+    <div id="editor">
+        <video id="video" controls></video>
+        <div class="control-panel">
+            <div class="form-group">
+                <label for="upload">Upload Video: </label>
+                <input type="file" id="upload" accept="video/*">
+            </div>
+            <div class="form-group">
+                <label for="video-url">Or paste URL: </label>
+                <input type="text" id="video-url" placeholder="Video URL">
+            </div>
+            <button onclick="loadVideo()">Load Video</button>
+            <button onclick="removeBackground()">Remove Background</button>
+            <button onclick="applyFilter()">Apply Filter</button>
+            <button onclick="adjustContrast()">Adjust Contrast</button>
+            <button onclick="addSticker()">Add Sticker</button>
+            <button onclick="addText()">Add Text</button>
+            <button onclick="addSound()">Add Sound</button>
+            <button onclick="downloadVideo('mp4')">Download as MP4</button>
+            <button onclick="downloadVideo('hd')">Download as HD</button>
+            <button onclick="downloadVideo('3gp')">Download as 3GP</button>
+        </div>
+    </div>
+    <form action="https://www.paypal.com/donate" method="post" target="_top">
+        <input type="hidden" name="business" value="alishehu723@gmail.com" />
+        <input type="hidden" name="no_recurring" value="0" />
+        <input type="hidden" name="item_name" value="Support VideoEditPro Development" />
+        <input type="hidden" name="currency_code" value="USD" />
+        <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+        <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+    </form>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg.js/0.10.2/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+    <script>
+        const videoElement = document.getElementById('video');
+        let currentVideoUrl = '';
+
+        function loadVideo() {
+            const fileInput = document.getElementById('upload');
+            const videoUrlInput = document.getElementById('video-url');
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const url = URL.createObjectURL(file);
+                videoElement.src = url;
+                currentVideoUrl = url;
+            } else if (videoUrlInput.value) {
+                videoElement.src = videoUrlInput.value;
+                currentVideoUrl = videoUrlInput.value;
+            } else {
+                alert('Please upload a video file or enter a video URL.');
+            }
+        }
+
+        async function removeBackground() {
+            const net = await bodyPix.load();
+            const segmentation = await net.segmentPerson(videoElement);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            ctx.drawImage(videoElement, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const { data: pixels } = imageData;
+
+            for (let i = 0; i < pixels.length; i += 4) {
+                if (!segmentation.data[i / 4]) {
+                    pixels[i + 3] = 0; // Set alpha to 0
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            videoElement.src = canvas.toDataURL();
+            alert('Background removed');
+        }
+
+        function applyFilter() {
+            videoElement.style.filter = 'grayscale(100%)';
+            alert('Grayscale filter applied');
+        }
+
+        function adjustContrast() {
+            videoElement.style.filter = 'contrast(200%)';
+            alert('Contrast adjusted');
+        }
+
+        function addSticker() {
+            alert('Sticker addition feature is under development.');
+        }
+
+        function addText() {
+            alert('Text addition feature is under development.');
+        }
+
+        function addSound() {
+            alert('Sound addition feature is under development.');
+        }
+
+        async function downloadVideo(format) {
+            const response = await fetch('/process-video', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: currentVideoUrl, format: format }),
+            });
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `video.${format}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
